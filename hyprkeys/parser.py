@@ -18,7 +18,8 @@ class Binding:
         return " + ".join(x.strip().replace("$mainMod", "SUPER") for x in (self.modifiers, self.key) if x.strip())
     @property
     def identity(self) -> tuple[str, str, str]:
-        return self.kind, self.modifiers.strip().lower(), self.key.strip().lower()
+        modifiers = self.modifiers.strip().lower().replace("$mainmod", "super")
+        return self.kind, modifiers, self.key.strip().lower()
 
 BIND_TYPES={"bind", "bindm", "bindl", "bindel", "bindr", "binde", "bindle"}
 
