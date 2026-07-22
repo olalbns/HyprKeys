@@ -1,0 +1,14 @@
+[build-system]
+requires=["setuptools>=68"]
+build-backend="setuptools.build_meta"
+[project]
+name="hyprkeys"
+version="0.1.0"
+description="Hyprland keyboard shortcut explorer"
+requires-python=">=3.10"
+[project.scripts]
+hyprkeys="hyprkeys.app:main"
+[tool.setuptools]
+packages=["hyprkeys"]
+[tool.setuptools.data-files]
+"share/applications"=["data/io.github.olalbns.hyprkeys.desktop"]
