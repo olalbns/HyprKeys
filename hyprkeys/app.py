@@ -1,5 +1,6 @@
 from __future__ import annotations
-import os, subprocess
+import os, shutil, subprocess
+from datetime import datetime
 from pathlib import Path
 import gi
 gi.require_version("Gtk", "4.0")
@@ -20,7 +21,7 @@ class Window(Gtk.ApplicationWindow):
         self.search=Gtk.SearchEntry(placeholder_text="Search key, command, action, or comment…", hexpand=True); self.search.connect("search-changed", lambda _w:self.render()); controls.append(self.search)
         self.filter=Gtk.ComboBoxText(); [self.filter.append_text(item) for item in ("All", "Windows", "Workspaces", "Media", "System", "Other")]; self.filter.set_active(0); self.filter.connect("changed", self.category_changed); controls.append(self.filter)
         dup=Gtk.ToggleButton(label="Duplicates only"); dup.connect("toggled", self.duplicates_changed); controls.append(dup)
-        for label, callback in (("Reload list", self.reload), ("Open config", self.open_config), ("Reload Hyprland", self.reload_hyprland)):
+        for label, callback in (("Add shortcut", self.add_shortcut), ("Reload list", self.reload), ("Open config", self.open_config), ("Reload Hyprland", self.reload_hyprland)):
             button=Gtk.Button(label=label); button.connect("clicked", lambda _b, fn=callback:fn()); controls.append(button)
         self.list=Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE); scroll=Gtk.ScrolledWindow(vexpand=True); scroll.set_child(self.list); root.append(scroll)
         self.status=Gtk.Label(xalign=0, wrap=True); self.status.add_css_class("dim-label"); root.append(self.status)
@@ -58,9 +59,41 @@ class Window(Gtk.ApplicationWindow):
         if duplicate:
             badge=Gtk.Label(label="Duplicate"); badge.add_css_class("error"); row.append(badge)
         return row
-    def open_config(self):
-        try: subprocess.Popen(["xdg-open", str(self.path)])
-        except FileNotFoundError:self.status.set_text("xdg-open is unavailable.")
+    def add_shortcut(self):
+        """Open a small form and append a valid bind line to hyprland.conf."""
+        dialog=Gtk.Dialog(title="Add Hyprland shortcut", transient_for=self, modal=True)
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL); dialog.add_button("Add shortcut", Gtk.ResponseType.ACCEPT)
+        content=dialog.get_content_area(); content.set_spacing(10); content.set_margin_top(14); content.set_margin_bottom(14); content.set_margin_start(14); content.set_margin_end(14)
+        grid=Gtk.Grid(column_spacing=10, row_spacing=8); content.append(grid)
+        kind=Gtk.ComboBoxText(); [kind.append_text(item) for item in ("bind", "bindl", "bindel", "bindm", "binde")]; kind.set_active(0)
+        modifiers=Gtk.Entry(text="$mainMod", placeholder_text="$mainMod or SUPER SHIFT")
+        key=Gtk.Entry(placeholder_text="RETURN, Q, XF86AudioRaiseVolume…")
+        dispatcher=Gtk.Entry(text="exec", placeholder_text="exec, workspace, killactive…")
+        argument=Gtk.Entry(placeholder_text="kitty, 1, or another dispatcher argument")
+        comment=Gtk.Entry(placeholder_text="Optional description")
+        fields=(("Binding type",kind),("Modifiers",modifiers),("Key",key),("Dispatcher",dispatcher),("Argument",argument),("Comment",comment))
+        for row,(label,widget) in enumerate(fields): grid.attach(Gtk.Label(label=label, xalign=0),0,row,1,1); grid.attach(widget,1,row,1,1)
+        dialog.connect("response", self.save_shortcut, kind, modifiers, key, dispatcher, argument, comment)
+        dialog.present()
+    def save_shortcut(self, dialog, response, kind, modifiers, key, dispatcher, argument, comment):
+        if response!=Gtk.ResponseType.ACCEPT: dialog.destroy(); return
+        values=[modifiers.get_text().strip(), key.get_text().strip(), dispatcher.get_text().strip(), argument.get_text().strip(), comment.get_text().strip()]
+        if not all(values[:3]) or any("\n" in value or "\r" in value for value in values):
+            self.status.set_text("Modifiers, key, and dispatcher are required; line breaks are not allowed."); dialog.destroy(); return
+        binding_kind=kind.get_active_text() or "bind"
+        line=f"{binding_kind} = {values[0]}, {values[1]}, {values[2]}"
+        if values[3]: line+=f", {values[3]}"
+        if values[4]: line+=f" # {values[4]}"
+        try:
+            if not self.path.is_file(): raise OSError(f"Configuration not found: {self.path}")
+            stamp=datetime.now().strftime("%Y%m%d-%H%M%S")
+            backup=self.path.with_name(f"{self.path.name}.hyprkeys-{stamp}.bak")
+            shutil.copy2(self.path, backup)
+            with self.path.open("a", encoding="utf-8") as config: config.write("\n# Added by HyprKeys\n"+line+"\n")
+            self.status.set_text(f"Shortcut added. Backup created: {backup.name}. Click Reload Hyprland to apply it.")
+            self.reload()
+        except OSError as error:self.status.set_text(f"Unable to save shortcut: {error}")
+        dialog.destroy()
     def reload_hyprland(self):
         try:
             subprocess.run(["hyprctl", "reload"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True); self.status.set_text("Hyprland configuration reloaded.")

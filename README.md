@@ -22,3 +22,10 @@ PYTHONPATH=. python -m hyprkeys.app
 ```ini
 bind = SUPER, K, exec, hyprkeys
 ```
+
+## Add a shortcut safely
+
+Use **Add shortcut** in the application to append a binding to the main
+`hyprland.conf`. HyprKeys validates required fields, refuses line breaks, and
+creates a timestamped backup next to the configuration before writing. Review
+and apply the new binding with **Reload Hyprland**.
