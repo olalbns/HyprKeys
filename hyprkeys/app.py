@@ -94,6 +94,11 @@ class Window(Gtk.ApplicationWindow):
             self.reload()
         except OSError as error:self.status.set_text(f"Unable to save shortcut: {error}")
         dialog.destroy()
+    def open_config(self):
+        try:
+            subprocess.Popen(["xdg-open", str(self.path)])
+        except FileNotFoundError:
+            self.status.set_text("xdg-open is unavailable.")
     def reload_hyprland(self):
         try:
             subprocess.run(["hyprctl", "reload"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True); self.status.set_text("Hyprland configuration reloaded.")
