@@ -1,31 +1,42 @@
 # HyprKeys
 
-GTK4 explorer for Hyprland key bindings. It reads `hyprland.conf` and its
-sourced configuration files, then offers search, categories, duplicate shortcut
-detection, and direct configuration reload.
+Explorateur GTK4 de raccourcis Hyprland. HyprKeys lit votre configuration et
+les fichiers inclus pour afficher tous vos raccourcis dans une interface
+recherchable.
 
-## Arch Linux
+## Fonctions
+
+- Lecture de `hyprland.conf` et des fichiers `source = ...` ;
+- recherche par touche, commande ou commentaire ;
+- catégories fenêtres, espaces de travail, multimédia et système ;
+- détection de raccourcis en doublon ;
+- ajout d’un raccourci depuis l’interface ;
+- ouverture de la configuration et rechargement de Hyprland.
+
+## Installation sur Arch Linux
 
 ```bash
-sudo pacman -S python python-gobject gtk4
+yay -S hyprkeys-git
 ```
 
-## Run from source
+## Utilisation
+
+Lancez HyprKeys avec :
 
 ```bash
-cd hyprkeys
-PYTHONPATH=. python -m hyprkeys.app
+hyprkeys
 ```
 
-## Hyprland shortcut
+Raccourci Hyprland conseillé :
 
 ```ini
 bind = SUPER, K, exec, hyprkeys
 ```
 
-## Add a shortcut safely
+### Ajouter un raccourci
 
-Use **Add shortcut** in the application to append a binding to the main
-`hyprland.conf`. HyprKeys validates required fields, refuses line breaks, and
-creates a timestamped backup next to the configuration before writing. Review
-and apply the new binding with **Reload Hyprland**.
+Cliquez sur **Add shortcut**, remplissez les modificateurs, la touche, le
+dispatcher et la commande. HyprKeys ajoute la règle dans votre `hyprland.conf`
+et crée automatiquement une sauvegarde horodatée à côté du fichier.
+
+Cliquez ensuite sur **Reload Hyprland** pour appliquer le raccourci.
